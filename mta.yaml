@@ -1,0 +1,84 @@
+_schema-version: "3.2"
+ID: customui
+version: 0.0.1
+modules:
+- name: customui-destination-content
+  type: com.sap.application.content
+  requires:
+  - name: customui-destination-service
+    parameters:
+      content-target: true
+  - name: customui_html_repo_host
+    parameters:
+      service-key:
+        name: customui_html_repo_host-key
+  - name: uaa_customui
+    parameters:
+      service-key:
+        name: uaa_customui-key
+  parameters:
+    content:
+      instance:
+        destinations:
+        - Name: bpServiceManaged_customui_html_repo_host
+          ServiceInstanceName: customui-html5-app-host-service
+          ServiceKeyName: customui_html_repo_host-key
+          sap.cloud.service: bpServiceManaged
+        - Authentication: OAuth2UserTokenExchange
+          Name: bpServiceManaged_uaa_customui
+          ServiceInstanceName: customui-xsuaa-service
+          ServiceKeyName: uaa_customui-key
+          sap.cloud.service: bpServiceManaged
+        existing_destinations_policy: ignore
+  build-parameters:
+    no-source: true
+- name: customui_ui_deployer
+  type: com.sap.application.content
+  path: .
+  requires:
+  - name: customui_html_repo_host
+    parameters:
+      content-target: true
+  build-parameters:
+    build-result: resources
+    requires:
+    - artifacts:
+      - BP-content.zip
+      name: BP
+      target-path: resources/
+- name: BP
+  type: html5
+  path: BP
+  build-parameters:
+    builder: custom
+    commands:
+    - npm run build
+    supported-platforms: []
+resources:
+- name: customui-destination-service
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      HTML5Runtime_enabled: true
+      version: 1.0.0
+    service: destination
+    service-name: customui-destination-service
+    service-plan: lite
+- name: customui_html_repo_host
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-name: customui-html5-app-host-service
+    service-plan: app-host
+- name: uaa_customui
+  type: org.cloudfoundry.managed-service
+  parameters:
+    path: ./xs-security.json
+    service: xsuaa
+    service-name: customui-xsuaa-service
+    service-plan: application
+build-parameters:
+  before-all:
+  - builder: custom
+    commands:
+    - npm install
